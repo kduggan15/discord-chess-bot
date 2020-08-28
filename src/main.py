@@ -45,7 +45,10 @@ class chessClient(discord.Client):
                 self.boards[message.guild.id] = chess.Board()
                 response = self.ascii_board(message.guild.id)
                 await message.channel.send(response)
-
+            elif self.boards[message.guild.id].parse_san(args[1]) in self.boards[message.guild.id].legal_moves:
+                self.boards[message.guild.id].push_san(args[1])
+                response = self.ascii_board(message.guild.id)
+                await message.channel.send(response)
 
 
 
