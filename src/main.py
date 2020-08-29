@@ -9,10 +9,32 @@ import chess
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-class chessClient(discord.Client):
+class chessGuild():
+    def __init__(self):
+        self.games = {}#{gameID->(board,white,black)} where board is a chess.Board(), and white and black are userIDs
+        self.players = {}#{userID->gameID} Used to prevent users being in multiple games, and to interpret commands
+        self.match_queue = []
 
-    def ascii_board(self, id):
-        b = f'`{self.boards[id]}`'
+    #returns true if a game starts, else false
+    def matchmake(self, userID) -> bool:
+        if self.match_queue:
+            board = chess.Board()
+            adv = self.match_queue.pop(0)#adversary
+            self.games[id(board)] = (board, adv,userID)#Use board's objectID as gameID. Unsure of this. TODO: might want to add randomness to b/w
+            self.players[userID] = id(board)#each player points to the gameID they're playing on
+            self.players[adv] = id(board)
+            return True
+        else:
+            self.match_queue.append(userID)
+            return False
+
+    def make_move(self,userID, san_move):
+        move = self.games[self.players[userID]][0].parse_san(san_move)#try for parsing error
+        self.games[self.players[userID]][0].push(move)
+
+    #Takes a userID and returns an ASCII representation of the board they're playing on
+    def ascii_board(self, userID):
+        b = f'`{self.games[self.players[userID]][0]}`'#TODO: what if player doesn't have a game
         b = b.replace('P','♟︎')
         b = b.replace('R','♜')
         b = b.replace('N','♞')
@@ -28,16 +50,13 @@ class chessClient(discord.Client):
         b = b.replace('k','♔')
         return b
 
-    def make_move(self, board, san_move):
-        move = board.parse_san(san_move)#try for parsing error
-        board.push(move)
-
+class chessClient(discord.Client):
 
     async def on_ready(self):
-        self.boards={}
-        guild = client.guilds[0]
+        self.chessGuilds={}
         print(f'{client.user} is connected to the following guilds:')
         for guild in client.guilds:
+            self.chessGuilds[guild.id] = chessGuild() #Simple constructor for chessGuilds, could be read from a DB in the future
             print(f'\t{guild.name}({guild.id})')
 
     async def on_message(self, message):
@@ -45,34 +64,36 @@ class chessClient(discord.Client):
             return
         args = message.content.split(' ')
         if args[0] == '!c':
-            if args[1] == 'new':
-                print(f"New game started on {message.guild}")
-                self.boards[message.guild.id] = chess.Board()
-                response = self.ascii_board(message.guild.id)
+            if args[1] == 'play':
+                result = self.chessGuilds[message.guild.id].matchmake(message.author.id)
+                if result:
+                    print(f"New game started on {message.guild}")
+                    response = self.chessGuilds[message.guild.id].ascii_board(message.author.id)#TODO: author vs author.id?
+                else:
+                    print(f'New player added to queue')
+                    response = f'{message.author} has been added to the matchmaking queue. Challenge them with !c play'
                 await message.channel.send(response)
+
             elif args[1] == 'legal-moves':
-                response = str(self.boards[message.guild.id].legal_moves)[37:-1]
+                response = 'STUB'#str(self.boards[message.guild.id].legal_moves)[37:-1] #Very hacky solution. Could be cleaner
                 await message.channel.send(response)
+
             elif args[1] == 'm' or args[1] == 'move':
-                response="unknown error"
+                response='unknown error'
                 try:
-                    self.make_move(self.boards[message.guild.id], args[2])
-                    response = self.ascii_board(message.guild.id)
+                    self.chessGuilds[message.guild.id].make_move(message.author.id, args[2])
+                    #self.make_move(self.boards[message.guild.id], args[2])
+                    response = self.chessGuilds[message.guild.id].ascii_board(message.author.id)#self.ascii_board(message.guild.id)
                 except ValueError as error:
                     if 'invalid' in str(error):
                         response = 'Move expects valid algebraic notation. ie; Ne3, e4, Qxe2, etc.'
                     elif 'illegal' in str(error):
                         response = 'Illegal move. For a list of legal moves try !c legal-moves'
                 except KeyError as error:
-                    response = 'No active game. Create a game with !c new'
+                    response = 'No active game. Join the queue with !c play'
                 await message.channel.send(response)
 
 
 
 client = chessClient()
-client.run(TOKEN)
-
-
-
-
 client.run(TOKEN)
