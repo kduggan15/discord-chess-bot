@@ -60,7 +60,7 @@ class chessClient(discord.Client):
                     response = self.ascii_board(message.guild.id)
                 except ValueError as error:
                     if 'invalid' in str(error):
-                        response = 'Move expects valid algebraic notation. https://en.wikipedia.org/wiki/Algebraic_notation_(chess)'
+                        response = 'Move expects valid algebraic notation. ie; Ne3, e4, Qxe2, etc.'
                     elif 'illegal' in str(error):
                         response = 'Illegal move. For a list of legal moves try !c legal-moves'
                 except KeyError as error:
