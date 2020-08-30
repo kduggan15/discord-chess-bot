@@ -32,9 +32,14 @@ class chessGuild():
             self.user_names[user.id] = user.name
             return False
 
+    def legal_moves(self,userID):
+        return str(self.games[self.players[userID]][0].legal_moves)[37:-1]#str(self.boards[message.guild.id].legal_moves)[37:-1]
+
     def make_move(self,userID, san_move):
         game = self.games[self.players[userID]]
-        if game[0].turn == chess.WHITE and game[1]==userID:
+        if game[0].is_game_over():
+            return
+        elif game[0].turn == chess.WHITE and game[1]==userID:
             move = game[0].parse_san(san_move) #try for parsing error
             game[0].push(move)
         elif game[0].turn == chess.BLACK and game[2]==userID:
@@ -43,7 +48,8 @@ class chessGuild():
 
     #Takes a userID and returns an ASCII representation of the board they're playing on
     def ascii_board(self, userID):
-        b = f'`{self.games[self.players[userID]][0]}`'#TODO: what if player doesn't have a game
+        game = self.games[self.players[userID]]
+        b = f'`{game[0]}`'#TODO: what if player doesn't have a game
         b = b.replace('P','♟︎')
         b = b.replace('R','♜')
         b = b.replace('N','♞')
@@ -57,10 +63,12 @@ class chessGuild():
         b = b.replace('b','♗')
         b = b.replace('q','♕')
         b = b.replace('k','♔')
-        if self.games[self.players[userID]][0].turn:
-            b+=f'\nWhite({self.user_names[self.games[self.players[userID]][1]]}) to move.'
+        if game[0].is_game_over():
+            b+=f'\nGame over {game[0].result()}'
+        elif game[0].turn:
+            b+=f'\nWhite({self.user_names[game[1]]}) to move.'
         else:
-            b+=f'\nBlack({self.user_names[self.games[self.players[userID]][2]]}) to move.'
+            b+=f'\nBlack({self.user_names[game[2]]}) to move.'
 
         return b
 
@@ -89,7 +97,7 @@ class chessClient(discord.Client):
                 await message.channel.send(response)
 
             elif args[1] == 'legal-moves':
-                response = 'STUB'#str(self.boards[message.guild.id].legal_moves)[37:-1] #Very hacky solution. Could be cleaner
+                response = self.chessGuilds[message.guild.id].legal_moves(message.author.id)
                 await message.channel.send(response)
 
             elif args[1] == 'm' or args[1] == 'move':
