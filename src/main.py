@@ -66,9 +66,9 @@ class chessGuild():
         if game[0].is_game_over():
             b+=f'\nGame over {game[0].result()}'
         elif game[0].turn:
-            b+=f'\nWhite({self.user_names[game[1]]}) to move.'
+            b+=f'\nWhite ({self.user_names[game[1]]}) to move.'
         else:
-            b+=f'\nBlack({self.user_names[game[2]]}) to move.'
+            b+=f'\nBlack ({self.user_names[game[2]]}) to move.'
 
         return b
 
