@@ -13,24 +13,33 @@ class chessGuild():
     def __init__(self):
         self.games = {}#{gameID->(board,white,black)} where board is a chess.Board(), and white and black are userIDs
         self.players = {}#{userID->gameID} Used to prevent users being in multiple games, and to interpret commands
+        self.user_names = {}
         self.match_queue = []
 
     #returns true if a game starts, else false
-    def matchmake(self, userID) -> bool:
+    def matchmake(self, user) -> bool:
         if self.match_queue:
+            self.user_names[user.id] = user.name
             board = chess.Board()
-            adv = self.match_queue.pop(0)#adversary
-            self.games[id(board)] = (board, adv,userID)#Use board's objectID as gameID. Unsure of this. TODO: might want to add randomness to b/w
-            self.players[userID] = id(board)#each player points to the gameID they're playing on
-            self.players[adv] = id(board)
+            white = self.match_queue.pop(0)
+            black = user.id
+            self.games[id(board)] = (board, white,black)#Use board's objectID as gameID. Unsure of this. TODO: might want to add randomness to b/w
+            self.players[white] = id(board)#each player points to the gameID they're playing on
+            self.players[black] = id(board)
             return True
         else:
-            self.match_queue.append(userID)
+            self.match_queue.append(user.id)
+            self.user_names[user.id] = user.name
             return False
 
     def make_move(self,userID, san_move):
-        move = self.games[self.players[userID]][0].parse_san(san_move)#try for parsing error
-        self.games[self.players[userID]][0].push(move)
+        game = self.games[self.players[userID]]
+        if game[0].turn == chess.WHITE and game[1]==userID:
+            move = game[0].parse_san(san_move) #try for parsing error
+            game[0].push(move)
+        elif game[0].turn == chess.BLACK and game[2]==userID:
+            move = game[0].parse_san(san_move) #try for parsing error
+            game[0].push(move)
 
     #Takes a userID and returns an ASCII representation of the board they're playing on
     def ascii_board(self, userID):
@@ -48,6 +57,11 @@ class chessGuild():
         b = b.replace('b','♗')
         b = b.replace('q','♕')
         b = b.replace('k','♔')
+        if self.games[self.players[userID]][0].turn:
+            b+=f'\nWhite({self.user_names[self.games[self.players[userID]][1]]}) to move.'
+        else:
+            b+=f'\nBlack({self.user_names[self.games[self.players[userID]][2]]}) to move.'
+
         return b
 
 class chessClient(discord.Client):
@@ -65,7 +79,7 @@ class chessClient(discord.Client):
         args = message.content.split(' ')
         if args[0] == '!c':
             if args[1] == 'play':
-                result = self.chessGuilds[message.guild.id].matchmake(message.author.id)
+                result = self.chessGuilds[message.guild.id].matchmake(message.author)
                 if result:
                     print(f"New game started on {message.guild}")
                     response = self.chessGuilds[message.guild.id].ascii_board(message.author.id)#TODO: author vs author.id?
@@ -92,7 +106,6 @@ class chessClient(discord.Client):
                 except KeyError as error:
                     response = 'No active game. Join the queue with !c play'
                 await message.channel.send(response)
-
 
 
 client = chessClient()
