@@ -18,7 +18,8 @@ class chessGuild():
 
     #returns true if a game starts, else false
     def matchmake(self, user) -> bool:
-        if self.match_queue:
+
+        if self.match_queue and user.id not in self.players:
             self.user_names[user.id] = user.name
             board = chess.Board()
             white = self.match_queue.pop(0)
@@ -27,7 +28,7 @@ class chessGuild():
             self.players[white] = id(board)#each player points to the gameID they're playing on
             self.players[black] = id(board)
             return True
-        else:
+        elif user.id not in self.players and user.id not in self.match_queue:# TODO: searches array which is slow
             self.match_queue.append(user.id)
             self.user_names[user.id] = user.name
             return False
@@ -65,6 +66,12 @@ class chessGuild():
         b = b.replace('k','♔')
         if game[0].is_game_over():
             b+=f'\nGame over {game[0].result()}'
+            #cleanup game
+            del self.players[game[1]]
+            if game[2] in self.players:
+                del self.players[game[2]]
+            del game
+            return b
         elif game[0].turn:
             b+=f'\nWhite ({self.user_names[game[1]]}) to move.'
         else:
