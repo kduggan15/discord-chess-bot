@@ -5,6 +5,7 @@ import discord
 from dotenv import load_dotenv
 
 import chess
+import random
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -22,9 +23,14 @@ class chessGuild():
         if self.match_queue and user.id not in self.players:
             self.user_names[user.id] = user.name
             board = chess.Board()
-            white = self.match_queue.pop(0)
-            black = user.id
-            self.games[id(board)] = (board, white,black)#Use board's objectID as gameID. Unsure of this. TODO: might want to add randomness to b/w
+            if random.randint(0,1):
+                white = self.match_queue.pop(0)
+                black = user.id
+            else:
+                black = self.match_queue.pop(0)
+                white = user.id
+
+            self.games[id(board)] = (board, white,black)#TODO: might want to add randomness to b/w
             self.players[white] = id(board)#each player points to the gameID they're playing on
             self.players[black] = id(board)
             return True
