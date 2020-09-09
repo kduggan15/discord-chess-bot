@@ -13,31 +13,33 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 class chessGuild():
     def __init__(self):
         self.games = {}#{gameID->(board,white,black)} where board is a chess.Board(), and white and black are userIDs
-        self.players = {}#{userID->gameID} Used to prevent users being in multiple games, and to interpret commands
-        self.user_names = {}
+        self.players = {}#{userID->gameID}, represents active players. Used to prevent users being in multiple games, and to interpret commands
+        self.user_names = {}#{userID->userName}Maintains dictionary of userids and usernames
         self.match_queue = []
 
     #returns true if a game starts, else false
-    def matchmake(self, user) -> bool:
-
-        if self.match_queue and user.id not in self.players:
-            self.user_names[user.id] = user.name
+    def matchmake(self)->bool:
+        if len(self.match_queue) >=2:
             board = chess.Board()
             if random.randint(0,1):
                 white = self.match_queue.pop(0)
-                black = user.id
+                black = self.match_queue.pop(0)
             else:
                 black = self.match_queue.pop(0)
-                white = user.id
-
-            self.games[id(board)] = (board, white,black)#TODO: might want to add randomness to b/w
+                white = self.match_queue.pop(0)
+            self.games[id(board)] = (board, white,black)
             self.players[white] = id(board)#each player points to the gameID they're playing on
             self.players[black] = id(board)
             return True
-        elif user.id not in self.players and user.id not in self.match_queue:# TODO: searches array which is slow
+        else:
+            return False
+    #returns true if a game starts, else false
+    def enqueue_player(self, user) -> bool:
+        if user.id not in self.players and user.id not in self.match_queue:# TODO: searches array which is slow
+            self.user_names[user.id] = user.name
             self.match_queue.append(user.id)
             self.user_names[user.id] = user.name
-            return False
+            return self.matchmake()
 
     def legal_moves(self,userID):
         return str(self.games[self.players[userID]][0].legal_moves)[37:-1]#str(self.boards[message.guild.id].legal_moves)[37:-1]
@@ -101,7 +103,7 @@ class chessClient(discord.Client):
         args = message.content.split(' ')
         if args[0] == '!c':
             if args[1] == 'play':
-                result = self.chessGuilds[message.guild.id].matchmake(message.author)
+                result = self.chessGuilds[message.guild.id].enqueue_player(message.author)
                 if result:
                     print(f"New game started on {message.guild}")
                     response = self.chessGuilds[message.guild.id].ascii_board(message.author.id)#TODO: author vs author.id?
