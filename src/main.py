@@ -130,6 +130,9 @@ class chessClient(discord.Client):
                 except KeyError as error:
                     response = 'No active game. Join the queue with !c play'
                 await message.channel.send(response)
+            elif args[1] == 'h' or args[1] == 'help':
+                response = 'Welcome to Chess Bot!\nTry `!c play` to get on the match queue.\n\nOnce in a game, make moves with `!c move [move]` or `!c m [move]`\nMoves are in algebraic notation, i.e. `!c m e4` to push a pawn or, `!c m Qxe4` to take the piece on e4 with the queen\n\nWhen the game ends, you can play again with `!c play`'
+                await message.channel.send(response)
 
 
 client = chessClient()
