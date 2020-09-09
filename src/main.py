@@ -54,6 +54,7 @@ class chessGuild():
             game[0].push(move)
 
     #Takes a userID and returns an ASCII representation of the board they're playing on
+    #TODO: This does two things. Prints the board and cleans up the game. This should be decoupled
     def ascii_board(self, userID):
         game = self.games[self.players[userID]]
         b = f'`{game[0]}`'#TODO: what if player doesn't have a game
