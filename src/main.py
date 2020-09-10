@@ -151,6 +151,9 @@ class chessClient(discord.Client):
             elif args[1]=='resign':
                 response = self.chessGuilds[message.guild.id].resign_player(message.author.id)
                 await message.channel.send(response)
+            elif args[1]=='resign':
+                response = self.chessGuilds[message.guild.id].resign_player(message.author.id)
+                await message.channel.send(response)
 
 
 client = chessClient()
