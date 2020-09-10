@@ -88,6 +88,21 @@ class chessGuild():
 
         return b
 
+    def resign_player(self, userID):
+        if userID not in self.players:
+            return "You are not in a match to resign from not in match"
+        else:
+            game = self.games[self.players[userID]]
+            user_name = self.user_names[userID]
+            #cleanup game:
+            del self.players[game[1]]
+            if game[2] in self.players:
+                del self.players[game[2]]
+            del game
+            return f"{user_name} has resigned. Game over"
+
+
+
 class chessClient(discord.Client):
 
     async def on_ready(self):
@@ -131,7 +146,10 @@ class chessClient(discord.Client):
                     response = 'No active game. Join the queue with !c play'
                 await message.channel.send(response)
             elif args[1] == 'h' or args[1] == 'help':
-                response = 'Welcome to Chess Bot!\nTry `!c play` to get on the match queue.\n\nOnce in a game, make moves with `!c move [move]` or `!c m [move]`\nMoves are in algebraic notation, i.e. `!c m e4` to push a pawn or, `!c m Qxe4` to take the piece on e4 with the queen\n\nWhen the game ends, you can play again with `!c play`'
+                response = 'Welcome to Chess Bot!\nTry `!c play` to get on the match queue.\n\nOnce in a game, make moves with `!c move [move]` or `!c m [move]`\nMoves are in algebraic notation, i.e. `!c m e4` to push a pawn or, `!c m Qxe4` to take the piece on e4 with the queen\n\nWhen the game ends, you can play again with `!c play`\n\nResign with `!c resign`'
+                await message.channel.send(response)
+            elif args[1]=='resign':
+                response = self.chessGuilds[message.guild.id].resign_player(message.author.id)
                 await message.channel.send(response)
 
 
