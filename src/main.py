@@ -18,6 +18,7 @@ class chessGuild():
         self.match_queue = []
 
     #returns true if a game starts, else false
+    #Add logging for matchmaking
     def matchmake(self)->bool:
         if len(self.match_queue) >=2:
             board = chess.Board()
@@ -34,12 +35,15 @@ class chessGuild():
         else:
             return False
     #returns true if a game starts, else false
-    def enqueue_player(self, user) -> bool:
+    def enqueue_player(self, user) -> str:
         if user.id not in self.players and user.id not in self.match_queue:# TODO: searches array which is slow
             self.user_names[user.id] = user.name
             self.match_queue.append(user.id)
             self.user_names[user.id] = user.name
-            return self.matchmake()
+            if self.matchmake():
+                return self.ascii_board(user.id)
+            else:
+                return f'{user.name} has been added to the matchmaking queue. Challenge them with !c play'
 
     def legal_moves(self,userID):
         return str(self.games[self.players[userID]][0].legal_moves)[37:-1]#str(self.boards[message.guild.id].legal_moves)[37:-1]
@@ -119,13 +123,7 @@ class chessClient(discord.Client):
         args = message.content.split(' ')
         if args[0] == '!c':
             if args[1] == 'play':
-                result = self.chessGuilds[message.guild.id].enqueue_player(message.author)
-                if result:
-                    print(f"New game started on {message.guild}")
-                    response = self.chessGuilds[message.guild.id].ascii_board(message.author.id)#TODO: author vs author.id?
-                else:
-                    print(f'New player added to queue')
-                    response = f'{message.author} has been added to the matchmaking queue. Challenge them with !c play'
+                response = self.chessGuilds[message.guild.id].enqueue_player(message.author)
                 await message.channel.send(response)
 
             elif args[1] == 'legal-moves':
