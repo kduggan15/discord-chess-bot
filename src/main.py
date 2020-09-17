@@ -49,15 +49,27 @@ class chessGuild():
         return str(self.games[self.players[userID]][0].legal_moves)[37:-1]#str(self.boards[message.guild.id].legal_moves)[37:-1]
 
     def make_move(self,userID, san_move):
-        game = self.games[self.players[userID]]
+        if userID in self.players:
+            game = self.games[self.players[userID]]
+        else:
+            return 'No active game. Join the queue with `!c play`'
+
         if game[0].is_game_over():
-            return
-        elif game[0].turn == chess.WHITE and game[1]==userID:
-            move = game[0].parse_san(san_move) #try for parsing error
-            game[0].push(move)
-        elif game[0].turn == chess.BLACK and game[2]==userID:
-            move = game[0].parse_san(san_move) #try for parsing error
-            game[0].push(move)
+            return None
+        elif (game[0].turn == chess.WHITE and game[1]==userID) or (game[0].turn == chess.BLACK and game[2]==userID):
+            try:
+                move = game[0].parse_san(san_move) #try for parsing error
+                game[0].push(move)
+            except ValueError as error:
+                if 'invalid' in str(error):
+                    return 'Move expects valid algebraic notation. ie; Ne3, e4, Qxe2, etc.'
+                elif 'illegal' in str(error):
+                    return 'Illegal move. For a list of legal moves try !c legal-moves'
+            return None
+        elif (game[0].turn == chess.WHITE and game[2]==userID) or (game[0].turn == chess.BLACK and game[1]==userID):
+            return "Player not to move"
+        else:
+            return 'Unknown error'
 
     #Takes a userID and returns an ASCII representation of the board they're playing on
     #TODO: This does two things. Prints the board and cleans up the game. This should be decoupled
@@ -131,25 +143,19 @@ class chessClient(discord.Client):
                 await message.channel.send(response)
 
             elif args[1] == 'm' or args[1] == 'move':
-                response='unknown error'
-                try:
-                    self.chessGuilds[message.guild.id].make_move(message.author.id, args[2])
-                    #self.make_move(self.boards[message.guild.id], args[2])
-                    response = self.chessGuilds[message.guild.id].ascii_board(message.author.id)#self.ascii_board(message.guild.id)
-                except ValueError as error:
-                    if 'invalid' in str(error):
-                        response = 'Move expects valid algebraic notation. ie; Ne3, e4, Qxe2, etc.'
-                    elif 'illegal' in str(error):
-                        response = 'Illegal move. For a list of legal moves try !c legal-moves'
-                except KeyError as error:
-                    response = 'No active game. Join the queue with `!c play`'
+                response = self.chessGuilds[message.guild.id].make_move(message.author.id, args[2])
+                if response is None:
+                    response = self.chessGuilds[message.guild.id].ascii_board(message.author.id)
                 await message.channel.send(response)
+
             elif args[1] == 'h' or args[1] == 'help':
                 response = 'Welcome to Chess Bot!\nTry `!c play` to get on the match queue.\n\nOnce in a game, make moves with `!c move [move]` or `!c m [move]`\nMoves are in algebraic notation, i.e. `!c m e4` to push a pawn or, `!c m Qxe4` to take the piece on e4 with the queen\n\nWhen the game ends, you can play again with `!c play`\n\nResign with `!c resign`'
                 await message.channel.send(response)
+
             elif args[1]=='resign':
                 response = self.chessGuilds[message.guild.id].resign_player(message.author.id)
                 await message.channel.send(response)
+                
             elif args[1]=='resign':
                 response = self.chessGuilds[message.guild.id].resign_player(message.author.id)
                 await message.channel.send(response)
